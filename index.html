@@ -1,0 +1,1114 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ProLaTeX Generator — Beamer Editor Enhanced</title>
+  <meta name="description" content="Single-file ProLaTeX Generator with an enhanced Beamer slide editor: add slides, images, tables and preview slides in-browser." />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap');
+    :root { 
+      --accent: #d97706; /* amber-600 */
+      --accent-light: #f59e0b; /* amber-500 */
+      --accent-dim: #92400e; /* amber-800 */
+      --bg: #0f172a; /* slate-900 */
+      --panel: #1e293b; /* slate-800 */
+      --panel-light: #334155; /* slate-700 */
+      --border: #334155;
+      --text-main: #e2e8f0; /* slate-200 */
+      --text-muted: #94a3b8; /* slate-400 */
+    }
+    html,body { height:100%; }
+    body { 
+      font-family: 'Inter', system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; 
+      background: var(--bg); 
+      color: var(--text-main); 
+    }
+    
+    /* Re-skinned elements */
+    .panel {
+      background-color: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 0.75rem;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+    .input-base {
+      background-color: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text-main);
+      border-radius: 0.5rem;
+      padding: 0.75rem 1rem;
+      width: 100%;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .input-base:focus {
+      outline: none;
+      border-color: var(--accent-light);
+      box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.2);
+    }
+    .input-base::placeholder {
+      color: var(--text-muted);
+    }
+    textarea.input-base {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", "Courier New", monospace;
+    }
+    .btn {
+      padding: 0.6rem 1rem;
+      border-radius: 0.5rem;
+      font-weight: 600;
+      transition: all 0.2s;
+      cursor: pointer;
+      text-align: center;
+    }
+    .btn-primary {
+      background-color: var(--accent);
+      color: white;
+      box-shadow: 0 2px 8px rgba(217,119,6,0.2);
+    }
+    .btn-primary:hover {
+      background-color: var(--accent-light);
+    }
+    .btn-secondary {
+      background-color: var(--panel-light);
+      color: var(--text-main);
+    }
+    .btn-secondary:hover {
+      background-color: #475569; /* slate-600 */
+    }
+    .btn-ghost {
+      background-color: transparent;
+      color: var(--text-muted);
+    }
+    .btn-ghost:hover {
+      background-color: var(--panel);
+      color: var(--text-main);
+    }
+    .btn-danger {
+      background-color: #991b1b; /* red-800 */
+      color: #fee2e2; /* red-100 */
+    }
+    .btn-danger:hover {
+      background-color: #b91c1c; /* red-700 */
+    }
+    
+    /* Slide Previews */
+    .slide-preview { 
+      background: white; 
+      color: #0f172a;
+      border-radius: 6px; 
+      box-shadow: 0 6px 20px rgba(0,0,0,0.12); 
+      padding: 24px; 
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      overflow: hidden;
+    }
+    .slide-thumb { 
+      width: 160px; 
+      height: 90px; 
+      background: white; 
+      color: #0f172a;
+      border-radius: 4px; 
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08); 
+      display:flex;align-items:center;justify-content:center; 
+      text-align:center; 
+      font-size:12px; 
+      padding:6px; 
+      cursor: pointer;
+      transition: box-shadow 0.2s;
+    }
+    .slide-thumb.active {
+      box-shadow: 0 0 0 3px var(--accent-light);
+    }
+
+    /* Code Output */
+    pre.code-block { 
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", "Courier New", monospace; 
+      font-size: 13px; 
+      line-height: 1.5;
+      background-color: #020617; /* slate-950 */
+      color: #a5f3fc; /* cyan-200 */
+      padding: 1rem;
+      border-radius: 0.75rem;
+      overflow: auto;
+      height: 75vh;
+    }
+    
+    /* Nav */
+    .main-nav-btn {
+      padding: 0.5rem 0.75rem;
+      border-radius: 0.375rem;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      transition: background-color 0.2s, color 0.2s;
+    }
+    .main-nav-btn:hover {
+      color: var(--text-main);
+      background-color: var(--panel-light);
+    }
+    .main-nav-btn.active {
+      color: white;
+      background-color: var(--accent);
+    }
+    
+    /* Editor Tabs */
+    .editor-tab-btn {
+      padding: 0.75rem 1.25rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      border-bottom: 2px solid transparent;
+      transition: color 0.2s, border-color 0.2s;
+    }
+    .editor-tab-btn.active {
+      color: var(--accent-light);
+      border-bottom-color: var(--accent-light);
+    }
+  </style>
+</head>
+<body class="min-h-screen p-4 sm:p-8">
+
+  <div class="max-w-7xl mx-auto">
+
+    <header class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+      <div>
+        <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight">
+          <span class="text-amber-500">Pro</span>LaTeX Generator
+        </h1>
+        <p class="text-sm text-slate-400 mt-1">Enhanced Beamer editor — now with a full-featured IDE interface.</p>
+      </div>
+      <nav class="flex gap-2" aria-label="Main navigation">
+        <button id="nav-landing" class="main-nav-btn active" onclick="showPage('landing')">Home</button>
+        <button id="nav-editor" class="main-nav-btn" onclick="showPage('editor')">Editor</button>
+        <button id="nav-templates" class="main-nav-btn" onclick="showPage('templates')">Templates</button>
+        <button id="nav-about" class="main-nav-btn" onclick="showPage('about')">About</button>
+      </nav>
+    </header>
+
+    <!-- NEW: Landing Page -->
+    <main id="page-landing" class="page active" role="main">
+      <div class="panel p-8 md:p-12">
+        <h2 class="text-3xl font-bold text-white mb-4">Welcome to ProLaTeX</h2>
+        <p class="text-lg text-slate-300 mb-8 max-w-2xl">
+          Choose a project type to begin. Your work will be generated into professional, clean LaTeX code.
+        </p>
+        <div class="grid md:grid-cols-2 gap-6">
+          <button onclick="startProject('beamer')" class="text-left p-6 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl transition-all hover:border-amber-500 hover:shadow-2xl">
+            <h3 class="text-xl font-bold text-amber-500">Beamer Presentation</h3>
+            <p class="text-slate-400 mt-2">
+              Use the full-featured visual slide editor to build a presentation. Add title slides, bullet points, images, and tables.
+            </p>
+          </button>
+          <button onclick="startProject('article')" class="text-left p-6 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl transition-all hover:border-amber-500 hover:shadow-2xl">
+            <h3 class="text-xl font-bold text-white">Article / Report</h3>
+            <p class="text-slate-400 mt-2">
+              Start a standard LaTeX article. (This will disable the visual slide editor and provide a standard article template).
+            </p>
+          </button>
+        </div>
+      </div>
+    </main>
+    
+    <!-- MODIFIED: Editor Page (now hidden by default) -->
+    <main id="page-editor" class="page hidden" role="main" aria-labelledby="generator-heading">
+      <div class="grid lg:grid-cols-4 gap-6">
+
+        <!-- Left: Configuration -->
+        <aside class="lg:col-span-1 p-6 panel">
+          <h2 id="config-heading" class="text-lg font-semibold mb-4 text-white">Document Configuration</h2>
+
+          <label class="block text-sm text-slate-400 mb-2">Document Type</label>
+          <div id="type-selector" class="flex flex-wrap gap-2 mb-4"></div>
+
+          <label class="block text-sm font-medium text-slate-400 mt-4">Title</label>
+          <input id="input-title" class="input-base mt-1" placeholder="Presentation Title">
+
+          <label class="block text-sm font-medium text-slate-400 mt-3">Author</label>
+          <input id="input-author" class="input-base mt-1" placeholder="Author Name">
+
+          <label class="block text-sm font-medium text-slate-400 mt-3">Custom packages</label>
+          <input id="input-packages" class="input-base mt-1" placeholder="e.g., graphicx, booktabs">
+
+          <label class="block text-sm font-medium text-slate-400 mt-3">Additional Preamble</label>
+          <textarea id="input-preamble" rows="3" class="input-base mt-1" placeholder="\newcommand{\mycmd}{...}"></textarea>
+
+          <div class="mt-6 grid grid-cols-2 gap-3">
+            <button id="generate-button" class="btn btn-primary">Generate</button>
+            <button id="download-button" class="btn btn-secondary" disabled>Download .tex</button>
+          </div>
+
+          <!-- Beamer-specific editor controls -->
+          <div id="beamer-controls" class="mt-8 hidden">
+            <h3 class="text-base font-semibold mb-3 text-amber-500 border-t border-slate-700 pt-6">Beamer Slide Editor</h3>
+            <div class="flex gap-2 mb-3">
+              <button onclick="addSlide('title')" class="btn btn-secondary text-sm flex-1">+ Title</button>
+              <button onclick="addSlide('bullet')" class="btn btn-secondary text-sm flex-1">+ Bullets</button>
+              <button onclick="addSlide('image')" class="btn btn-secondary text-sm flex-1">+ Image</button>
+              <button onclick="addSlide('table')" class="btn btn-secondary text-sm flex-1">+ Table</button>
+            </div>
+
+            <div class="mb-2">
+              <label class="text-sm text-slate-400">Slides</label>
+              <div id="slides-list" class="mt-2 space-y-2 max-h-64 overflow-auto pr-2"></div>
+            </div>
+            
+            <div id="slide-nav-buttons" class="mt-4 grid grid-cols-4 gap-2">
+                <button id="prev-slide" class="btn btn-secondary">Prev</button>
+                <button id="next-slide" class="btn btn-secondary col-span-2">Next</button>
+                <button id="duplicate-slide" class="btn btn-secondary" title="Duplicate current slide">Dup</button>
+            </div>
+            
+          </div>
+        </aside>
+
+        <!-- Middle/Right: Tabbed Content Area -->
+        <section class="lg:col-span-3 panel overflow-hidden">
+          
+          <!-- NEW: Tab Navigation -->
+          <nav class="flex border-b border-slate-700 px-6">
+            <button id="tab-btn-editor" class="editor-tab-btn active" onclick="showTab('editor')">Editor</button>
+            <button id="tab-btn-slideshow" class="editor-tab-btn" onclick="showTab('slideshow')">Slideshow</button>
+            <button id="tab-btn-code" class="editor-tab-btn" onclick="showTab('code')">Source Code</button>
+          </nav>
+          
+          <!-- Tab 1: Editor + Preview -->
+          <div id="tab-content-editor" class="tab-content active p-6">
+            <div class="grid lg:grid-cols-2 gap-6">
+              <!-- Editor -->
+              <div>
+                <div class="flex justify-between items-center mb-4">
+                  <h2 id="generator-heading" class="text-xl font-bold text-white">Slide Content</h2>
+                  <button id="remove-slide" class="btn btn-danger text-sm" title="Delete current slide">Delete Slide</button>
+                </div>
+                <div id="slide-editor" class="space-y-4">
+                  <!-- populated dynamically -->
+                </div>
+              </div>
+
+              <!-- Preview -->
+              <div>
+                <div class="flex items-center justify-between mb-2">
+                  <div class="flex items-center gap-3">
+                    <div class="text-sm font-medium text-slate-300">Live Preview</div>
+                    <div id="slide-index" class="text-xs text-slate-500">Slide 0 / 0</div>
+                  </div>
+                  <button id="toggle-thumbs" class="btn btn-ghost text-sm">Thumbnails</button>
+                </div>
+                <div id="preview-canvas" class="slide-preview overflow-hidden">
+                  <!-- slide preview rendered here -->
+                </div>
+                <div id="thumbs" class="mt-3 hidden flex gap-3 overflow-auto pb-2">
+                  <!-- thumbnails -->
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Tab 2: Fullscreen Slideshow -->
+          <div id="tab-content-slideshow" class="tab-content hidden p-6">
+             <h2 class="text-xl font-bold text-white mb-4">Slideshow Preview</h2>
+             <div id="slideshow-canvas" class="slide-preview mx-auto">
+                <!-- full slide preview rendered here -->
+             </div>
+             <div class="flex justify-center gap-4 mt-6">
+                <button id="slideshow-prev" class="btn btn-secondary">Previous</button>
+                <div id="slideshow-index" class="text-slate-400 p-3">Slide 0 / 0</div>
+                <button id="slideshow-next" class="btn btn-secondary">Next</button>
+             </div>
+          </div>
+
+          <!-- Tab 3: Source Code -->
+          <div id="tab-content-code" class="tab-content hidden p-6">
+            <div class="flex justify-between items-center mb-4">
+               <h2 class="text-xl font-bold text-white">Generated .tex Code</h2>
+               <div class="flex gap-2">
+                 <button id="copy-button" class="btn btn-secondary" disabled>Copy</button>
+                 <button id="open-btn" class="btn btn-secondary" disabled>Open in New Tab</button>
+               </div>
+            </div>
+            <pre id="output-code" class="code-block" tabindex="0">% Press Generate to render .tex</pre>
+            <div id="toast" role="status" aria-live="polite" class="mt-3 text-sm text-center text-green-500 opacity-0 transition-opacity duration-300"></div>
+          </div>
+          
+        </section>
+
+      </div>
+    </main>
+
+    <!-- Templates -->
+    <section id="page-templates" class="page panel p-6 hidden">
+      <h2 class="text-2xl font-bold text-white mb-4">Templates</h2>
+      <div class="grid md:grid-cols-3 gap-6">
+        <article class="p-6 border border-slate-700 bg-slate-800 rounded-lg">
+          <h3 class="font-semibold text-amber-500">Beamer Presentation</h3>
+          <p class="text-sm text-slate-400 mt-2">Modern beamer template with a visual slide editor. Click "Editor" to use.</p>
+        </article>
+        <article class="p-6 border border-slate-700 bg-slate-800 rounded-lg">
+          <h3 class="font-semibold text-white">Article / Report</h3>
+          <p class="text-sm text-slate-400 mt-2">Academic article template. Select this from the "Document Type" list in the editor.</p>
+        </article>
+        <article class="p-6 border border-slate-700 bg-slate-800 rounded-lg">
+          <h3 class="font-semibold text-white">KOMA Script</h3>
+          <p class="text-sm text-slate-400 mt-2">KOMA-Script generic document. Select this from the "Document Type" list.</p>
+        </article>
+      </div>
+      <div class="mt-6"><button onclick="showPage('editor')" class="btn btn-primary">Open Editor</button></div>
+    </section>
+
+    <!-- About -->
+    <section id="page-about" class="page panel p-6 hidden">
+      <h2 class="text-2xl font-bold text-white mb-4">About ProLaTeX</h2>
+      <p class="text-slate-300 max-w-xl">
+        This is an enhanced Beamer editor built into a single, portable HTML file. It uses vanilla JavaScript and Tailwind CSS to provide a modern, IDE-like experience without needing any backend or build process.
+        <br/><br/>
+        All processing happens locally in your browser.
+      </p>
+      <div class="mt-6"><button onclick="showPage('editor')" class="btn btn-primary">Open Editor</button></div>
+    </section>
+
+  </div>
+
+  <script>
+    // --- Data model for slides ---
+    let slides = [];
+    let currentSlide = -1;
+    let activeEditorTab = 'editor';
+
+    const docTypes = [
+      { id: 'beamer', name: 'Beamer (Presentation)', className: 'beamer', packages: ['graphicx','booktabs'] },
+      { id: 'article', name: 'Article / Report', className: 'article', packages: ['amsmath','booktabs','hyperref'] },
+      { id: 'koma', name: 'KOMA (scrartcl)', className: 'scrartcl', packages: ['geometry','microtype'] }
+    ];
+    let selectedType = 'beamer';
+
+    // --- Routing / UI helpers ---
+    function showPage(id) {
+      // Hide all pages
+      document.querySelectorAll('.page').forEach(el => el.classList.add('hidden'));
+      
+      // Show target page
+      const el = document.getElementById('page-' + id);
+      if (el) el.classList.remove('hidden');
+      
+      // Update nav button active state
+      ['landing', 'editor', 'templates', 'about'].forEach(p => {
+        const btn = document.getElementById('nav-' + p);
+        if (btn) {
+          if (p === id) btn.classList.add('active'); 
+          else btn.classList.remove('active');
+        }
+      });
+      
+      if (id === 'editor') {
+        renderTypeSelector();
+      }
+    }
+    
+    function startProject(typeId) {
+        selectedType = typeId;
+        showPage('editor');
+    }
+
+    // NEW: Tab switching for editor page
+    function showTab(id) {
+        activeEditorTab = id;
+        // Hide all tab content
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+        // Show target tab content
+        document.getElementById('tab-content-' + id).classList.remove('hidden');
+        
+        // Update tab button active state
+        ['editor', 'slideshow', 'code'].forEach(p => {
+            const btn = document.getElementById('tab-btn-' + p);
+            if (p === id) btn.classList.add('active');
+            else btn.classList.remove('active');
+        });
+        
+        // Refresh content on tab show
+        if (id === 'slideshow') renderSlideshow();
+        if (id === 'code') generateCode();
+    }
+
+    function renderTypeSelector() {
+      const selector = document.getElementById('type-selector');
+      selector.innerHTML = '';
+      docTypes.forEach(t => {
+        const btn = document.createElement('button');
+        btn.className = t.id === selectedType 
+          ? 'px-3 py-2 rounded-md bg-amber-600 text-white text-sm' 
+          : 'px-3 py-2 rounded-md text-sm bg-slate-700 text-slate-300 hover:bg-slate-600';
+        btn.textContent = t.name;
+        btn.onclick = () => { selectedType = t.id; onTypeChange(); };
+        selector.appendChild(btn);
+      });
+      onTypeChange();
+    }
+
+    function onTypeChange() {
+      const beamerControls = document.getElementById('beamer-controls');
+      if (selectedType === 'beamer') {
+        beamerControls.classList.remove('hidden');
+        document.getElementById('tab-btn-slideshow').style.display = 'block';
+      } else {
+        beamerControls.classList.add('hidden');
+        document.getElementById('tab-btn-slideshow').style.display = 'none';
+        if(activeEditorTab === 'slideshow') showTab('editor'); // Kick user off slideshow tab
+      }
+      renderTypeSelector(); // Re-render buttons
+      generateCode(); // refresh
+    }
+
+    // --- Slide operations ---
+    function addSlide(type = 'title') {
+      const id = Date.now().toString(36);
+      const slide = { id, type, title: '', notes: '', bullets: [], imageData: null, imageName: '', imageAlign: 'center', table: null };
+      // default contents per type
+      if (type === 'title') { slide.title = 'Presentation Title'; slide.sub = 'Subtitle or Presenter'; }
+      if (type === 'bullet') { slide.title = 'Slide Title'; slide.bullets = ['First point', 'Second point']; }
+      if (type === 'image') { slide.title = 'Image Slide'; }
+      if (type === 'table') {
+        slide.title = 'Table Slide';
+        slide.table = { rows: 3, cols: 3, header: true, cells: Array.from({length:3}, () => Array.from({length:3}, (_,c) => `c${c+1}`)) };
+      }
+      slides.push(slide);
+      currentSlide = slides.length - 1;
+      renderSlidesList();
+      renderSlideEditor();
+      renderPreview();
+      generateCode();
+    }
+
+    function removeSlideAt(index) {
+      if (index < 0 || index >= slides.length) return;
+      if (slides.length === 1) {
+          alert("Cannot delete the last slide.");
+          return;
+      }
+      slides.splice(index,1);
+      currentSlide = Math.max(0, currentSlide - 1);
+      renderSlidesList();
+      renderSlideEditor();
+      renderPreview();
+      generateCode();
+    }
+
+    function duplicateSlideAt(index) {
+      if (index < 0 || index >= slides.length) return;
+      const s = JSON.parse(JSON.stringify(slides[index]));
+      s.id = Date.now().toString(36);
+      slides.splice(index+1,0,s);
+      currentSlide = index+1;
+      renderSlidesList();
+      renderSlideEditor();
+      renderPreview();
+      generateCode();
+    }
+
+    function renderSlidesList() {
+      const list = document.getElementById('slides-list');
+      list.innerHTML = '';
+      slides.forEach((s,i) => {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'flex items-center justify-between gap-2 p-3 bg-slate-900 border border-slate-700 rounded-lg hover:bg-slate-800 cursor-pointer';
+        wrapper.onclick = () => { currentSlide = i; renderSlideEditor(); renderPreview(); renderSlidesList(); };
+        
+        const meta = document.createElement('div');
+        meta.innerHTML = `<div class="text-sm font-medium text-slate-200">${s.title || '(untitled)'}</div><div class="text-xs text-amber-500">${s.type}</div>`;
+        wrapper.appendChild(meta);
+        
+        if (i === currentSlide) wrapper.classList.add('ring-2','ring-amber-500');
+        list.appendChild(wrapper);
+      });
+      document.getElementById('slide-index').textContent = `Slide ${currentSlide+1 || 0} / ${slides.length}`;
+      renderSlideshowIndex();
+    }
+
+    // --- Slide Editor UI ---
+    function renderSlideEditor() {
+      const editor = document.getElementById('slide-editor');
+      editor.innerHTML = '';
+      if (currentSlide < 0 || currentSlide >= slides.length) {
+        editor.innerHTML = '<div class="text-sm text-slate-500">No slide selected. Add a slide to begin editing.</div>';
+        document.getElementById('prev-slide').disabled = true;
+        document.getElementById('next-slide').disabled = true;
+        document.getElementById('duplicate-slide').disabled = true;
+        document.getElementById('remove-slide').disabled = true;
+        return;
+      }
+      document.getElementById('prev-slide').disabled = false;
+      document.getElementById('next-slide').disabled = false;
+      document.getElementById('duplicate-slide').disabled = false;
+      document.getElementById('remove-slide').disabled = false;
+
+      const s = slides[currentSlide];
+
+      // Common controls: title, notes
+      const titleLabel = document.createElement('label');
+      titleLabel.innerHTML = `<div class="text-sm font-medium text-slate-400">Slide Title</div>`;
+      const titleInput = document.createElement('input');
+      titleInput.className = 'input-base mt-1';
+      titleInput.value = s.title || '';
+      titleInput.oninput = (e) => { s.title = e.target.value; renderSlidesList(); renderPreview(); generateCodeDebounced(); };
+      titleLabel.appendChild(titleInput);
+      editor.appendChild(titleLabel);
+
+      // Type-specific editors
+      if (s.type === 'title') {
+        const subLabel = document.createElement('label');
+        subLabel.innerHTML = `<div class="text-sm font-medium text-slate-400 mt-2">Subtitle</div>`;
+        const subInput = document.createElement('input');
+        subInput.className = 'input-base mt-1';
+        subInput.value = s.sub || '';
+        subInput.oninput = (e) => { s.sub = e.target.value; renderPreview(); generateCodeDebounced(); };
+        subLabel.appendChild(subInput);
+        editor.appendChild(subLabel);
+      }
+
+      if (s.type === 'bullet') {
+        const bulletsLabel = document.createElement('label');
+        bulletsLabel.innerHTML = `<div class="text-sm font-medium text-slate-400 mt-2">Bullet items (one per line)</div>`;
+        const ta = document.createElement('textarea');
+        ta.className = 'input-base mt-1';
+        ta.rows = 6;
+        ta.value = (s.bullets || []).join('\n');
+        ta.oninput = (e) => { s.bullets = e.target.value.split('\n').filter(Boolean); renderPreview(); generateCodeDebounced(); };
+        bulletsLabel.appendChild(ta);
+        editor.appendChild(bulletsLabel);
+      }
+
+      if (s.type === 'image') {
+        const fileLabel = document.createElement('label');
+        fileLabel.innerHTML = `<div class="text-sm font-medium text-slate-400 mt-2">Image</div>`;
+        const fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.accept = 'image/*';
+        fileInput.className = 'input-base mt-1 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-amber-100 file:text-amber-700 hover:file:bg-amber-200';
+        fileInput.onchange = (e) => handleImageUpload(e, s);
+        fileLabel.appendChild(fileInput);
+        editor.appendChild(fileLabel);
+
+        const alignLabel = document.createElement('div');
+        alignLabel.className = 'mt-2';
+        alignLabel.innerHTML = `<div class="text-sm font-medium text-slate-400">Alignment</div>`;
+        const alignSelect = document.createElement('select');
+        alignSelect.className = 'input-base mt-1';
+        ['center','top-left','top-right','bottom-left','bottom-right','left','right'].forEach(a => {
+          const opt = document.createElement('option');
+          opt.value = a; opt.textContent = a.replace('-', ' ');
+          alignSelect.appendChild(opt);
+        });
+        alignSelect.value = s.imageAlign || 'center';
+        alignSelect.onchange = (e) => { s.imageAlign = e.target.value; renderPreview(); generateCodeDebounced(); };
+        alignLabel.appendChild(alignSelect);
+        editor.appendChild(alignLabel);
+
+        const previewBox = document.createElement('div');
+        previewBox.className = 'mt-3 p-4 bg-slate-900 rounded-lg';
+        if (s.imageData) {
+          const img = document.createElement('img');
+          img.src = s.imageData;
+          img.style.maxWidth = '100%';
+          img.style.borderRadius = '4px';
+          previewBox.appendChild(img);
+        } else {
+          previewBox.innerHTML = '<div class="text-xs text-slate-500">No image uploaded</div>';
+        }
+        editor.appendChild(previewBox);
+      }
+
+      if (s.type === 'table') {
+        const tableConfig = document.createElement('div');
+        tableConfig.className = 'mt-2 grid grid-cols-3 gap-2';
+        const rowsIn = document.createElement('input');
+        rowsIn.type = 'number';
+        rowsIn.min = 1;
+        rowsIn.value = s.table?.rows || 3;
+        rowsIn.className = 'input-base';
+        rowsIn.onchange = (e) => { updateTableSize(s, parseInt(e.target.value), s.table.cols); };
+        const colsIn = document.createElement('input');
+        colsIn.type = 'number';
+        colsIn.min = 1;
+        colsIn.value = s.table?.cols || 3;
+        colsIn.className = 'input-base';
+        colsIn.onchange = (e) => { updateTableSize(s, s.table.rows, parseInt(e.target.value)); };
+        const headerChkWrap = document.createElement('div');
+        headerChkWrap.className = 'flex items-center gap-2 p-2';
+        const headerChk = document.createElement('input');
+        headerChk.type = 'checkbox';
+        headerChk.id = 'table-header-check';
+        headerChk.className = 'h-4 w-4 rounded text-amber-600 focus:ring-amber-500';
+        headerChk.checked = !!s.table.header;
+        headerChk.onchange = (e) => { s.table.header = e.target.checked; renderTableEditor(s); renderPreview(); generateCodeDebounced(); };
+        headerChkWrap.appendChild(headerChk);
+        const headerLabel = document.createElement('label');
+        headerLabel.htmlFor = 'table-header-check';
+        headerLabel.textContent = 'Header';
+        headerLabel.className = 'text-sm text-slate-300';
+        headerChkWrap.appendChild(headerLabel);
+        
+        tableConfig.appendChild(divWrap('Rows', rowsIn));
+        tableConfig.appendChild(divWrap('Cols', colsIn));
+        tableConfig.appendChild(headerChkWrap);
+        editor.appendChild(tableConfig);
+
+        const tableEditorWrap = document.createElement('div');
+        tableEditorWrap.id = 'table-editor';
+        tableEditorWrap.className = 'mt-3';
+        editor.appendChild(tableEditorWrap);
+
+        renderTableEditor(s);
+      }
+
+      const notesLabel = document.createElement('label');
+      notesLabel.innerHTML = `<div class="text-sm font-medium text-slate-400 mt-2">Notes (optional)</div>`;
+      const notesInput = document.createElement('textarea');
+      notesInput.className = 'input-base mt-1';
+      notesInput.rows = 2;
+      notesInput.value = s.notes || '';
+      notesInput.oninput = (e) => { s.notes = e.target.value; generateCodeDebounced(); };
+      notesLabel.appendChild(notesInput);
+      editor.appendChild(notesLabel);
+    }
+
+    function divWrap(labelText, el) {
+      const wrap = document.createElement('div');
+      const lbl = document.createElement('div');
+      lbl.className = 'text-xs text-slate-500 mb-1';
+      lbl.textContent = labelText;
+      wrap.appendChild(lbl);
+      wrap.appendChild(el);
+      return wrap;
+    }
+
+    function renderTableEditor(s) {
+      const wrap = document.getElementById('table-editor');
+      if (!wrap) return;
+      wrap.innerHTML = '';
+      const t = s.table;
+      const grid = document.createElement('div');
+      grid.className = 'grid gap-1';
+      grid.style.gridTemplateColumns = `repeat(${t.cols}, 1fr)`;
+      for (let r=0;r<t.rows;r++) {
+        for (let c=0;c<t.cols;c++) {
+          const input = document.createElement('input');
+          input.className = 'input-base p-2 text-sm';
+          input.value = t.cells?.[r]?.[c] ?? '';
+          input.oninput = (e) => { t.cells[r][c] = e.target.value; renderPreview(); generateCodeDebounced(); };
+          if (t.header && r === 0) input.style.fontWeight = '600';
+          grid.appendChild(input);
+        }
+      }
+      wrap.appendChild(grid);
+    }
+
+    function updateTableSize(s, rows, cols) {
+      rows = Math.max(1, rows || 1); cols = Math.max(1, cols || 1);
+      const old = s.table || { rows:0, cols:0, cells:[] };
+      const cells = [];
+      for (let r=0;r<rows;r++) {
+        cells[r] = [];
+        for (let c=0;c<cols;c++) {
+          cells[r][c] = (old.cells?.[r]?.[c] ?? (r===0? `H${c+1}` : `r${r+1}c${c+1}`));
+        }
+      }
+      s.table = { rows, cols, header: old.header ?? true, cells };
+      renderTableEditor(s);
+      renderPreview();
+      generateCodeDebounced();
+    }
+    
+    function handleImageUpload(ev, slide) {
+      const file = ev.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        slide.imageData = e.target.result;
+        slide.imageName = file.name;
+        renderSlideEditor();
+        renderPreview();
+        generateCodeDebounced();
+      };
+      reader.readAsDataURL(file);
+    }
+
+    // --- Preview rendering (for both canvases) ---
+    function renderPreview() {
+        renderPreviewCanvas('preview-canvas');
+        if (activeEditorTab === 'slideshow') {
+            renderSlideshow();
+        }
+        updateThumbs();
+    }
+    
+    function renderSlideshow() {
+        renderPreviewCanvas('slideshow-canvas');
+        renderSlideshowIndex();
+    }
+    
+    function renderSlideshowIndex() {
+        document.getElementById('slideshow-index').textContent = `Slide ${currentSlide+1 || 0} / ${slides.length}`;
+    }
+
+    function renderPreviewCanvas(canvasId) {
+      const canvas = document.getElementById(canvasId);
+      canvas.innerHTML = '';
+      if (slides.length === 0) {
+        canvas.innerHTML = '<div class="text-stone-500 p-4">Add slides (Title, Bullets, Image, Table) to preview the presentation here.</div>';
+        return;
+      }
+      if (currentSlide < 0) currentSlide = 0;
+      
+      const s = slides[currentSlide];
+      document.getElementById('slide-index').textContent = `Slide ${currentSlide+1} / ${slides.length}`;
+
+      const frame = document.createElement('div');
+      frame.style.width = '100%'; 
+      frame.style.height = '100%'; 
+      frame.style.display = 'flex'; 
+      frame.style.flexDirection = 'column'; 
+      frame.style.justifyContent = 'flex-start';
+      
+      if (s.title) {
+        const h = document.createElement('div');
+        h.style.fontSize = '2.25rem'; // 36px
+        h.style.fontWeight = '800'; 
+        h.style.marginBottom = '1.5rem'; // 24px
+        h.style.color = '#1e3a8a'; // blue-900
+        h.textContent = s.title;
+        frame.appendChild(h);
+      }
+
+      if (s.type === 'title') {
+        const subt = document.createElement('div');
+        subt.style.fontSize = '1.5rem'; // 24px
+        subt.style.color = '#334155'; // slate-700
+        subt.textContent = s.sub || '';
+        frame.appendChild(subt);
+      } else if (s.type === 'bullet') {
+        const ul = document.createElement('ul');
+        ul.style.listStyleType = 'disc';
+        ul.style.paddingLeft = '2.5rem';
+        s.bullets?.forEach(b => {
+          const li = document.createElement('li');
+          li.style.marginBottom = '0.75rem'; // 12px
+          li.style.fontSize = '1.125rem'; // 18px
+          li.style.color = '#0f172a';
+          li.textContent = b;
+          ul.appendChild(li);
+        });
+        frame.appendChild(ul);
+      } else if (s.type === 'image') {
+        const imgWrap = document.createElement('div');
+        imgWrap.style.flex = '1';
+        imgWrap.style.display = 'flex';
+        imgWrap.style.alignItems = s.imageAlign?.startsWith('top') ? 'flex-start' : s.imageAlign?.startsWith('bottom') ? 'flex-end' : 'center';
+        if (s.imageAlign?.includes('left')) imgWrap.style.justifyContent = 'flex-start';
+        else if (s.imageAlign?.includes('right')) imgWrap.style.justifyContent = 'flex-end';
+        else imgWrap.style.justifyContent = 'center';
+        if (s.imageData) {
+          const img = document.createElement('img');
+          img.src = s.imageData;
+          img.style.maxWidth = '100%';
+          img.style.maxHeight = '100%';
+          img.style.borderRadius = '6px';
+          img.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
+          imgWrap.appendChild(img);
+        } else {
+          imgWrap.innerHTML = '<div class="text-stone-500">No image uploaded</div>';
+        }
+        frame.appendChild(imgWrap);
+      } else if (s.type === 'table') {
+        const table = document.createElement('table');
+        table.style.width = '100%';
+        table.style.borderCollapse = 'collapse';
+        table.style.fontSize = '1rem';
+        const t = s.table;
+        for (let r=0;r<t.rows;r++) {
+          const tr = document.createElement('tr');
+          for (let c=0;c<t.cols;c++) {
+            const td = document.createElement(r===0 && t.header ? 'th' : 'td');
+            td.style.border = '1px solid #e2e8f0';
+            td.style.padding = '0.75rem';
+            td.style.textAlign = 'left';
+            if (r===0 && t.header) {
+              td.style.background = '#f1f5f9';
+              td.style.fontWeight = '700';
+            }
+            td.textContent = (t.cells?.[r]?.[c] ?? '');
+            tr.appendChild(td);
+          }
+          table.appendChild(tr);
+        }
+        frame.appendChild(table);
+      }
+
+      canvas.appendChild(frame);
+    }
+
+    function updateThumbs() {
+      const thumbs = document.getElementById('thumbs');
+      thumbs.innerHTML = '';
+      slides.forEach((s,i) => {
+        const t = document.createElement('div');
+        t.className = 'slide-thumb';
+        t.onclick = () => { currentSlide = i; renderSlideEditor(); renderPreview(); renderSlidesList(); };
+        t.innerHTML = `<div style="font-size:11px;line-height:1.05;font-weight:600;">${s.title || '(untitled)'}<div style="font-size:10px;color:#6b7280;margin-top:6px;font-weight:400;">${s.type}</div></div>`;
+        if (i === currentSlide) t.classList.add('active');
+        thumbs.appendChild(t);
+      });
+    }
+
+    // --- LaTeX generation ---
+    function generateBeamerLaTeX() {
+      const title = (document.getElementById('input-title')?.value || 'Presentation Title');
+      const author = (document.getElementById('input-author')?.value || 'Author');
+      const customPackages = (document.getElementById('input-packages')?.value || '').split(',').map(s=>s.trim()).filter(Boolean);
+      const preamble = (document.getElementById('input-preamble')?.value || '');
+      const defaultPkgs = docTypes.find(d => d.id === 'beamer')?.packages || [];
+      const combined = Array.from(new Set([...defaultPkgs, ...customPackages]));
+      const packageLines = combined.map(p => `\\usepackage{${p}}`).join('\n');
+
+      let tex = `\\documentclass{beamer}
+% --- Generated by ProLaTeX Generator (Beamer editor) ---
+${packageLines}
+\\usepackage{booktabs}
+\\usepackage{graphicx}
+\\usepackage{caption}
+${preamble ? '%\n% Custom Preamble\n' + preamble + '\n' : ''}
+\\title{${escapeTex(title)}}
+\\author{${escapeTex(author)}}
+\\date{\\today}
+
+\\begin{document}
+\\frame{\\titlepage}
+\\begin{frame}{Outline}
+  \\tableofcontents
+\\end{frame}
+`;
+      slides.forEach((s, idx) => {
+        tex += `\n% --- Slide ${idx+1}: ${escapeTex(s.title || '(untitled)')} ---\n`;
+        if (s.type === 'title') {
+          tex += `\\begin{frame}{${escapeTex(s.title)}}\n`;
+          if (s.sub) tex += `\\centering {\\large ${escapeTex(s.sub)}}\n`;
+          if (s.notes) tex += `\\note{ ${escapeTex(s.notes)} }\n`;
+          tex += `\\end{frame}\n`;
+        } else if (s.type === 'bullet') {
+          tex += `\\begin{frame}{${escapeTex(s.title)}}\n`;
+          if (s.bullets && s.bullets.length) {
+            tex += '  \\begin{itemize}\n';
+            s.bullets.forEach(b => tex += `    \\item ${escapeTex(b)}\n`);
+            tex += '  \\end{itemize}\n';
+          }
+          if (s.notes) tex += `\\note{ ${escapeTex(s.notes)} }\n`;
+          tex += `\\end{frame}\n`;
+        } else if (s.type === 'image') {
+          tex += `\\begin{frame}{${escapeTex(s.title)}}\n`;
+          const align = s.imageAlign || 'center';
+          if (s.imageData && s.imageName) {
+            const fname = sanitizeFilename(s.imageName || `image_${idx+1}.png`);
+            if (align === 'center') tex += `  \\begin{center}\n    \\includegraphics[width=0.85\\linewidth]{${fname}}\n  \\end{center}\n`;
+            else if (align === 'left') tex += `  \\begin{flushleft}\n    \\includegraphics[width=0.8\\linewidth]{${fname}}\n  \\end{flushleft}\n`;
+            else if (align === 'right') tex += `  \\begin{flushright}\n    \\includegraphics[width=0.8\\linewidth]{${fname}}\n  \\end{flushright}\n`;
+            else {
+              if (align === 'top-left') tex += `  \\vspace{-1em}\\begin{flushleft}\\includegraphics[width=0.5\\linewidth]{${fname}}\\end{flushleft}\n`;
+              else if (align === 'top-right') tex += `  \\vspace{-1em}\\begin{flushright}\\includegraphics[width=0.5\\linewidth]{${fname}}\\end{flushright}\n`;
+              else if (align === 'bottom-left') tex += `  \\vspace{1em}\\begin{flushleft}\\includegraphics[width=0.5\\linewidth]{${fname}}\\end{flushleft}\n`;
+              else if (align === 'bottom-right') tex += `  \\vspace{1em}\\begin{flushright}\\includegraphics[width=0.5\\linewidth]{${fname}}\\end{flushright}\n`;
+              else tex += `  \\begin{center}\\includegraphics[width=0.8\\linewidth]{${fname}}\\end{center}\n`;
+            }
+            tex += `  % Note: include the image file '${fname}' alongside the .tex file when compiling.\n`;
+          }
+          if (s.notes) tex += `\\note{ ${escapeTex(s.notes)} }\n`;
+          tex += `\\end{frame}\n`;
+        } else if (s.type === 'table') {
+          const t = s.table;
+          tex += `\\begin{frame}{${escapeTex(s.title)}}\n`;
+          if (t && t.cols) {
+            const colSpec = Array(t.cols).fill('l').join(' | ');
+            tex += `  \\begin{table}[h]\n  \\centering\n  \\begin{tabular}{${colSpec}}\n  \\toprule\n`;
+            for (let c=0;c<t.cols;c++) {
+              const cell = escapeTex(t.cells?.[0]?.[c] ?? '');
+              tex += (c>0 ? ' & ' : '    ') + (t.header ? `\\textbf{${cell}}` : cell);
+            }
+            tex += ` \\\\\n  \\midrule\n`;
+            for (let r=1;r<t.rows;r++) {
+              for (let c=0;c<t.cols;c++) {
+                const cell = escapeTex(t.cells?.[r]?.[c] ?? '');
+                tex += (c>0 ? ' & ' : '    ') + cell;
+              }
+              tex += ` \\\\\n`;
+            }
+            tex += `  \\bottomrule\n  \\end{tabular}\n  \\caption{${escapeTex(s.title || '')}}\n  \\end{table}\n`;
+          }
+          if (s.notes) tex += `\\note{ ${escapeTex(s.notes)} }\n`;
+          tex += `\\end{frame}\n`;
+        }
+      });
+      tex += `\n\\end{document}\n`;
+      return tex;
+    }
+    
+    function generateArticleLaTeX() {
+      const title = (document.getElementById('input-title')?.value || 'Article Title');
+      const author = (document.getElementById('input-author')?.value || 'Author');
+      const customPackages = (document.getElementById('input-packages')?.value || '').split(',').map(s=>s.trim()).filter(Boolean);
+      const preamble = (document.getElementById('input-preamble')?.value || '');
+      const doc = docTypes.find(d => d.id === selectedType);
+      const defaultPkgs = doc.packages || [];
+      const combined = Array.from(new Set([...defaultPkgs, ...customPackages]));
+      const packageLines = combined.map(p => `\\usepackage{${p}}`).join('\n');
+
+      return `\\documentclass{${doc.className}}
+% --- Generated by ProLaTeX Generator (${doc.name}) ---
+\\usepackage[utf8]{inputenc}
+${packageLines}
+${preamble ? '%\n% Custom Preamble\n' + preamble + '\n' : ''}
+\\title{${escapeTex(title)}}
+\\author{${escapeTex(author)}}
+\\date{\\today}
+
+\\begin{document}
+
+\\maketitle
+
+\\section{Introduction}
+Your content goes here.
+
+\\end{document}
+`;
+    }
+
+    function escapeTex(str) {
+      if (!str && str !== 0) return '';
+      return String(str).replace(/([%&$#_{}~^\\])/g, '\\\\$1');
+    }
+
+    function sanitizeFilename(name) {
+      return name.replace(/[^a-zA-Z0-9._-]/g, '_');
+    }
+
+    // --- Generate / Copy / Download ---
+    function generateCode() {
+      const outputEl = document.getElementById('output-code');
+      const copyBtn = document.getElementById('copy-button');
+      const downloadBtn = document.getElementById('download-button');
+      const openBtn = document.getElementById('open-btn');
+
+      let tex = '';
+      if (selectedType === 'beamer') {
+        tex = generateBeamerLaTeX();
+      } else {
+        tex = generateArticleLaTeX();
+      }
+      
+      outputEl.textContent = tex;
+      copyBtn.disabled = false;
+      openBtn.disabled = false;
+      downloadBtn.disabled = false;
+
+      const blob = new Blob([tex], { type: 'text/x-tex' });
+      const url = URL.createObjectURL(blob);
+      openBtn.onclick = () => window.open(url, '_blank');
+      downloadBtn.onclick = () => {
+        const a = document.createElement('a');
+        a.href = url;
+        const title = (document.getElementById('input-title')?.value || 'document').replace(/[^\w\d_-]/g,'_');
+        a.download = `${title}.tex`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+      };
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    }
+
+    let genTimer = null;
+    function generateCodeDebounced() {
+      clearTimeout(genTimer);
+      genTimer = setTimeout(generateCode, 450);
+    }
+
+    async function copyToClipboard() {
+      const txt = document.getElementById('output-code')?.textContent || '';
+      if (!txt) return showToast('Nothing to copy', 'error');
+      try {
+        await navigator.clipboard.writeText(txt);
+        showToast('LaTeX code copied to clipboard', 'success');
+      } catch (err) {
+        console.error(err); showToast('Failed to copy', 'error');
+      }
+    }
+
+    function showToast(msg, type='success') {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.remove('opacity-0');
+      t.style.color = type === 'error' ? '#f87171' : '#4ade80';
+      setTimeout(() => { t.classList.add('opacity-0'); }, 3000);
+    }
+
+    // --- Init and Event Listeners ---
+    document.addEventListener('DOMContentLoaded', () => {
+      // Show landing page by default
+      showPage('landing');
+
+      if (slides.length === 0) {
+        addSlide('title');
+        addSlide('bullet');
+      }
+      renderSlidesList();
+      renderSlideEditor();
+      renderPreview();
+      generateCode();
+
+      // Slide nav
+      document.getElementById('prev-slide').addEventListener('click', () => {
+        if (slides.length === 0) return;
+        currentSlide = Math.max(0, currentSlide - 1);
+        renderSlideEditor(); renderPreview(); renderSlidesList();
+      });
+      document.getElementById('next-slide').addEventListener('click', () => {
+        if (slides.length === 0) return;
+        currentSlide = Math.min(slides.length - 1, currentSlide + 1);
+        renderSlideEditor(); renderPreview(); renderSlidesList();
+      });
+      document.getElementById('remove-slide').addEventListener('click', () => {
+        removeSlideAt(currentSlide);
+      });
+      document.getElementById('duplicate-slide').addEventListener('click', () => {
+        duplicateSlideAt(currentSlide);
+      });
+      
+      // Slideshow nav
+      document.getElementById('slideshow-prev').addEventListener('click', () => {
+        if (slides.length === 0) return;
+        currentSlide = Math.max(0, currentSlide - 1);
+        renderSlideshow(); renderSlidesList();
+      });
+      document.getElementById('slideshow-next').addEventListener('click', () => {
+        if (slides.length === 0) return;
+        currentSlide = Math.min(slides.length - 1, currentSlide + 1);
+        renderSlideshow(); renderSlidesList();
+      });
+
+      // Main actions
+      document.getElementById('generate-button').addEventListener('click', () => { 
+        generateCode(); 
+        showToast('Generated .tex updated', 'success'); 
+      });
+      document.getElementById('copy-button').addEventListener('click', copyToClipboard);
+
+      document.getElementById('toggle-thumbs').addEventListener('click', () => {
+        document.getElementById('thumbs').classList.toggle('hidden');
+      });
+      
+      // Global input listeners
+      document.getElementById('input-title').addEventListener('input', generateCodeDebounced);
+      document.getElementById('input-author').addEventListener('input', generateCodeDebounced);
+      document.getElementById('input-packages').addEventListener('input', generateCodeDebounced);
+      document.getElementById('input-preamble').addEventListener('input', generateCodeDebounced);
+    });
+
+  </script>
+</body>
+</html>
+

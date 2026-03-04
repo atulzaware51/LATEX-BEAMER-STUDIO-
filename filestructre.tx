@@ -1,0 +1,57 @@
+latex-generator/
+│
+├── index.html                (Landing Page)
+├── login.html
+├── register.html
+├── dashboard.html
+├── editor.html
+├── templates.html
+├── pricing.html
+├── docs.html
+│
+├── /assets
+│   ├── /images
+│   ├── /icons
+│   └── /fonts
+│
+├── /css
+│   ├── global.css
+│   ├── landing.css
+│   ├── auth.css
+│   ├── dashboard.css
+│   ├── editor.css
+│   ├── templates.css
+│   ├── pricing.css
+│   └── docs.css
+│
+├── /js
+│   ├── main.js
+│   ├── auth.js
+│   ├── dashboard.js
+│   ├── editor.js
+│   ├── latexGenerator.js
+│   ├── templateManager.js
+│   ├── exportManager.js
+│   ├── equationBuilder.js
+│   └── api.js
+│
+├── /backend
+│   ├── server.js
+│   ├── routes/
+│   │   ├── authRoutes.js
+│   │   ├── projectRoutes.js
+│   │   ├── compileRoutes.js
+│   │   └── exportRoutes.js
+│   │
+│   ├── controllers/
+│   ├── services/
+│   ├── models/
+│   └── docker/
+│
+├── /templates
+│   ├── beamerTemplate.tex
+│   ├── reportTemplate.tex
+│   ├── posterTemplate.tex
+│   └── resumeTemplate.tex
+│
+└── package.json
